@@ -17,10 +17,10 @@ module SymbolOperatorMethods
       :descending => '-'
     }
 
-    t = Garb.to_google_analytics(@field || @target)
-    o = operators[@operator]
+    t = Garb.to_google_analytics(@field || @target || @key)
+    o = operators.with_indifferent_access[@operator]
 
-    [:desc, :descending].include?(@operator) ? "#{o}#{t}" : "#{t}#{o}"
+    [:desc, :descending].include?(@operator.to_sym) ? "#{o}#{t}" : "#{t}#{o}"
   end
 end
 
@@ -44,6 +44,12 @@ if Object.const_defined?("DataMapper")
   end
 
   symbol_slugs = (Garb.symbol_operator_slugs - DataMapper::Query::Conditions::Comparison.slugs)
+elsif Object.const_defined?("Mongoid")
+  require 'mongoid/criterion/complex'
+
+  class Mongoid::Criterion::Complex
+    include SymbolOperatorMethods
+  end
 else
   symbol_slugs = Garb.symbol_operator_slugs
 end
@@ -51,9 +57,9 @@ end
 # define the remaining symbol operators
 symbol_slugs.each do |operator|
   Symbol.class_eval <<-RUBY
-    def #{operator}
-      warn("The use of SymbolOperator(#{operator}, etc.) has been deprecated. Please use named filters.")
-      SymbolOperator.new(self, :#{operator})
-    end unless method_defined?(:#{operator})
+  def #{operator}
+    warn("The use of SymbolOperator(#{operator}, etc.) has been deprecated. Please use named filters.")
+    SymbolOperator.new(self, :#{operator})
+  end unless method_defined?(:#{operator})
   RUBY
 end
