@@ -32,7 +32,7 @@ module Garb
     end
 
     def entries
-      feed? ? [parsed_data['feed']['aggregates']].flatten.compact : []
+      feed? ? [parsed_data['feed']['entry']].flatten.compact : []
     end
 
     def parse_total_results
