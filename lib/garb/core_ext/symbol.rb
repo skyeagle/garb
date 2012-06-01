@@ -8,6 +8,7 @@ module SymbolOperatorMethods
       :lt => '<',
       :lte => '<=',
       :matches => '==',
+      :elemMatch => '==', # for Mongoid 2.4
       :does_not_match => '!=',
       :contains => '=~',
       :does_not_contain => '!~',
