@@ -1,59 +1,57 @@
-module Garb  
+module Garb
   class ReportResponse
-    require 'xmlsimple'
-
-    KEYS = ['metric', 'dimension']
 
     def initialize(response_body, instance_klass = OpenStruct)
-      @data = response_body
+      @response_body = response_body
       @instance_klass = instance_klass
     end
 
     def results
       if @results.nil?
         @results = ResultSet.new(parse)
-        @results.total_results = parse_total_results
-        @results.sampled = parse_sampled_flag
+        @results.total_results = total_results
+        @results.sampled = sampled?
       end
-
       @results
     end
 
+    def total_results
+      data[:total_results]
+    end
+
     def sampled?
+      data[:contains_sampled_data]
     end
 
     private
+    def keys
+      @keys ||= column_headers.map { |header| Garb.from_ga header['name'] }
+    end
+
     def parse
-      entries.map do |entry|
-        @instance_klass.new(Hash[
-          values_for(entry).map {|v| [Garb.from_ga(v['name']), v['value']]}
-        ])
+      rows.map do |row|
+        @instance_klass.new(Hash[*keys.zip(row).flatten])
       end
     end
 
-    def entries
-      feed? ? [parsed_data['feed']['entry']].flatten.compact : []
+    def column_headers
+      data[:column_headers] || []
     end
 
-    def parse_total_results
-      feed? ? parsed_data['feed']['openSearch:totalResults'].to_i : 0
+    def rows
+      data[:rows] || []
     end
 
-    def parse_sampled_flag
-      feed? ? (parsed_data['feed']['dxp$containsSampledData'] == 'true') : false
-    end
-
-    def parsed_data
-      # @parsed_data ||= JSON.parse(@data)
-      @parsed_data ||= {'feed' => XmlSimple.xml_in(@data)}
-    end
-
-    def feed?
-      !parsed_data['feed'].nil?
-    end
-
-    def values_for(entry)
-      KEYS.map {|k| entry[k]}.flatten.compact
+    def data
+      unless @data
+        @data = MultiJson.load @response_body
+        @data = @data.inject({}) do |data, pair|
+          key, value = pair
+          data[key.underscore.to_sym] = value
+          data
+        end
+      end
+      @data
     end
   end
 end

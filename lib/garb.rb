@@ -1,16 +1,18 @@
+$:.unshift File.dirname(__FILE__)
+
 require 'net/http'
 require 'net/https'
 
 require 'cgi'
 require 'ostruct'
 
-begin 
-  require 'yajl/json_gem' # JSON.parse
-rescue LoadError
-  require 'json'
-end
+require 'multi_json'
 
 module Garb
+  autoload :VERSION,          'garb/version'
+  
+  autoload :Attributes,       'garb/attributes'
+  autoload :PathAttribute,    'garb/path_attribute'
   autoload :Destination,      'garb/destination'
   autoload :FilterParameters, 'garb/filter_parameters'
   autoload :Model,            'garb/model'
@@ -20,7 +22,6 @@ module Garb
   autoload :ResultSet,        'garb/result_set'
   autoload :Session,          'garb/session'
   autoload :Step,             'garb/step'
-  autoload :Version,          'garb/version'
 
   module Management
     autoload :Account,     'garb/management/account'
@@ -32,31 +33,38 @@ module Garb
   end
 
   module Request
-    autoload :Authentication, "garb/request/authentication"
+    autoload :Authentication, 'garb/request/authentication'
     autoload :Data,           'garb/request/data'
   end
-end
-
-# require 'garb/account_feed_request'
-# require 'garb/resource'
-# require 'garb/report'
+ end
 
 module Garb
-  GA = "http://schemas.google.com/analytics/2008"
-
   extend self
 
   class << self
-    attr_accessor :proxy_address, :proxy_port, :proxy_user, :proxy_password
-    attr_writer   :read_timeout
+    attr_accessor :proxy_address, :proxy_port, :proxy_user, :proxy_password, :logger
+    attr_writer   :open_timeout, :read_timeout, :ca_cert_file
+  end
+
+  def open_timeout
+    @open_timeout || 60
   end
 
   def read_timeout
     @read_timeout || 60
   end
 
+  def ca_cert_file
+    @ca_cert_file || raise(MissingCertFileError)
+  end
+
+  def log(str, level = :debug)
+    level, str = str, level if str.is_a? Symbol
+    logger.send level, str unless logger.nil?
+  end
+
   def to_google_analytics(thing)
-    return thing.to_google_analytics if thing.respond_to?(:to_google_analytics)
+    return thing.to_google_analytics if thing.respond_to? :to_google_analytics
 
     "#{$1}ga:#{$2}" if "#{thing.to_s.camelize(:lower)}" =~ /^(-)?(.*)$/
   end
@@ -66,24 +74,7 @@ module Garb
     thing.to_s.gsub(/^ga\:/, '').underscore
   end
   alias :from_ga :from_google_analytics
-
-  def parse_properties(entry)
-    Hash[entry['property'].map {|p| [Garb.from_ga(p['name']),p['value']]}]
-  end
-
-  def parse_link(entry, rel)
-    entry['link'].detect {|link| link["rel"] == rel}['href']
-  end
-
-  def symbol_operator_slugs
-    [:eql, :not_eql, :gt, :gte, :lt, :lte, :desc, :descending, :matches,
-      :does_not_match, :contains, :does_not_contain, :substring, :not_substring]
-  end
-
-  # new(address, port = nil, p_addr = nil, p_port = nil, p_user = nil, p_pass = nil)
-
-  # opts => open_timeout, read_timeout, ssl_timeout
-  # probably just support open_timeout
 end
 
 require 'garb/support'
+require 'garb/errors'

@@ -1,24 +1,20 @@
 module Garb
   module Management
     class Feed
-      require 'xmlsimple'
-      
-      BASE_URL = "https://www.google.com/analytics/feeds/datasources/ga"
+      BASE_URL = 'https://www.googleapis.com/analytics/v3/management'
 
       attr_reader :request
 
       def initialize(session, path)
-        @request = Request::Data.new(session, BASE_URL+path)
+        @request = Request::Data.new(session, BASE_URL + path)
       end
 
       def parsed_response
-        # @parsed_response ||= JSON.parse(response.body)
-        @parsed_response ||= {'feed' => XmlSimple.xml_in(response.body)}
+        @parsed_response ||= MultiJson.load(response.body)
       end
 
       def entries
-        # possible to have nil entries, yuck
-        parsed_response ? [parsed_response['feed']['entry']].flatten.compact : []
+        parsed_response ? parsed_response['items'] : []
       end
 
       def response

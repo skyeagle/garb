@@ -1,6 +1,3 @@
-/pkg/
-demo.rb
-.DS_Store
-output.xml
+*.gem
 coverage
-.rvmrc
+pkg

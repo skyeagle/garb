@@ -7,12 +7,12 @@ module Garb
     #     should "create an operator and add to parameters for the #{operator} method" do
     #       new_operator = stub
     #       symbol = :foo
-    # 
+    #
     #       SymbolOperator.expects(:new).with(:bar, operator).returns(new_operator)
     #       @filter_parameters.filters do
     #         send(operator.to_sym, :bar, 100)
     #       end
-    # 
+    #
     #       parameter = {new_operator => 100}
     #       assert_equal parameter, @filter_parameters.parameters.last
     #     end
@@ -35,10 +35,10 @@ module Garb
           assert_equal params, filters.to_params
         end
 
-        should "escape comma, semicolon, and backslash in values" do
+        should "escape comma, semicolon in values" do
           filters = FilterParameters.new({:url.eql => 'this;that,thing\other'})
 
-          params = {'filters' => 'ga:url%3D%3Dthis%5C%3Bthat%5C%2Cthing%5C%5Cother'}
+          params = {'filters' => 'ga:url%3D%3Dthis%5C%3Bthat%5C%2Cthing%5Cother'}
           assert_equal params, filters.to_params
         end
 

@@ -1,10 +1,12 @@
 module Garb
   module Model
     MONTH = 2592000
-    URL = "https://www.google.com/analytics/feeds/data"
+    #URL = 'https://www.google.com/analytics/feeds/data'
+    URL = 'https://www.googleapis.com/analytics/v3/data/ga'
 
     def self.extended(base)
       ProfileReports.add_report_method(base)
+      # base.set_instance_klass(base)
     end
 
     def metrics(*fields)
@@ -26,6 +28,8 @@ module Garb
     end
 
     def results(profile, options = {})
+      return all_results(profile, options) if options.delete(:all)
+
       start_date = options.fetch(:start_date, Time.now - MONTH)
       end_date = options.fetch(:end_date, Time.now)
       default_params = build_default_params(profile, start_date, end_date)
@@ -39,11 +43,24 @@ module Garb
         parse_sort(options).to_params,
         build_page_params(options)
       ]
-
       data = send_request_for_data(profile, build_params(param_set))
       ReportResponse.new(data, instance_klass).results
     end
 
+    def all_results(profile, options = {})
+      limit = options.delete(:limit)
+      options[:limit] = 10_000 # maximum allowed
+      results = nil
+      while ((rs = results(profile, options)) && !rs.empty?)
+        results = results ? results + rs : rs
+        options[:offset] = results.size + 1
+        
+        break if limit and results.size >= limit
+        break if results.size >= results.total_results
+      end
+      limit && results ? results[0...limit] : results
+    end
+    
     private
     def send_request_for_data(profile, params)
       request = Request::Data.new(profile.session, URL, params)
@@ -52,7 +69,7 @@ module Garb
     end
 
     def build_params(param_set)
-      param_set.inject({}) {|p,i| p.merge(i)}.reject{|k,v| v.nil?}
+      param_set.inject({}) { |p,i| p.merge i }.reject { |k,v| v.nil? }
     end
 
     def parse_filters(options)
@@ -61,7 +78,7 @@ module Garb
 
     def parse_segment(options)
       segment_id = "gaid::#{options[:segment_id].to_i}" if options.has_key?(:segment_id)
-      {'segment' => segment_id}
+      { 'segment' => segment_id }
     end
 
     def parse_sort(options)
@@ -79,7 +96,10 @@ module Garb
     end
 
     def build_page_params(options)
-      {'max-results' => options[:limit], 'start-index' => options[:offset]}
+      params = {}
+      params['max-results'] = options[:limit] if options.has_key? :limit
+      params['start-index'] = options[:offset] if options.has_key? :offset
+      params
     end
 
     def format_time(t)

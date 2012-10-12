@@ -1,21 +1,34 @@
+require 'forwardable'
+
 module Garb
   class ResultSet
     include Enumerable
+    include Comparable
+    extend Forwardable
 
-    attr_accessor :total_results, :sampled
-
-    alias :sampled? :sampled
+    attr_accessor :results, :total_results, :sampled
+    alias_method :sampled?, :sampled
+    
+    def_delegators :results, :each, :to_a, :count, :size, :empty?
 
     def initialize(results)
       @results = results
     end
-
-    def each(&block)
-      @results.each(&block)
+    
+    def <=>(other)
+      results <=> other.results
     end
-
-    def to_a
-      @results
+    
+    def +(other)
+      copy = self.dup
+      copy.results = @results + other.to_a
+      copy
+    end
+    
+    def [](*args)
+      copy = self.dup
+      copy.results = @results[*args]
+      copy
     end
   end
 end

@@ -1,18 +1,15 @@
-source :rubygems
-source "http://gems.github.com"
+source 'http://rubygems.org'
 
-gem 'rake', '~> 0.8.7'
+# Specify your gem's dependencies in garb.gemspec
+gemspec
 
-gem 'i18n'
+gem 'rake'
 
 group :test do
   gem 'shoulda'
-  gem 'simplecov'
-  gem 'minitest', :require => false
+  gem 'shoulda-context'
+  gem 'simplecov',     :require => false
+  gem 'minitest',      :require => false
   gem 'jferris-mocha', :require => false
   gem 'yajl-ruby'
-end
-
-group :demo do
-  gem 'oauth'
 end

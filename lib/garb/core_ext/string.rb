@@ -1,5 +1,5 @@
 # Pull in some AS String utilities (not loaded if AS is available)
-unless Object.const_defined?("ActiveSupport")
+unless Object.const_defined?('ActiveSupport')
   class String
     def camelize(first_letter = :upper)
       case first_letter
@@ -18,7 +18,6 @@ unless Object.const_defined?("ActiveSupport")
     end
   end
 
-
   module Garb
     module Inflector
       extend self
@@ -30,7 +29,7 @@ unless Object.const_defined?("ActiveSupport")
           lower_case_and_underscored_word.to_s[0].chr.downcase + camelize(lower_case_and_underscored_word)[1..-1]
         end
       end
-   
+
       def underscore(camel_cased_word)
         word = camel_cased_word.to_s.dup
         word.gsub!(/::/, '/')
